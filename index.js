@@ -37,13 +37,24 @@ function animaster() {
 
     // Сложные анимации
 
+    // Анимация moveAndHide: элемент перемещается на 100px вправо и 20px вниз (за 2/5 времени)
+    // и затем исчезает (за оставшиеся 3/5 времени)
+    // Функция возвращает контроллер, позволяющий остановить (stop) или сбросить (reset) анимацию
     function moveAndHide(element, duration) {
         const moveDuration = (duration * 2) / 5;
         const fadeDuration = duration - moveDuration;
         move(element, moveDuration, { x: 100, y: 20 });
-        setTimeout(() => {
+        const timerId = setTimeout(() => {
             fadeOut(element, fadeDuration);
         }, moveDuration);
+        return {
+            stop: () => clearTimeout(timerId),
+            reset: () => {
+                clearTimeout(timerId);
+                resetMoveAndScale(element);
+                resetFadeOut(element);
+            }
+        };
     }
 
     function showAndHide(element, duration) {
@@ -54,6 +65,7 @@ function animaster() {
         }, 2 * stepDuration);
     }
     
+    // Анимация сердцебиения. Возвращает контроллер с методом stop
     function heartBeating(element) {
         scale(element, 500, 1.4);
         setTimeout(() => {
@@ -70,20 +82,23 @@ function animaster() {
         };
     }
 
-    // Служебные функции для сброса состояний анимаций
+    // Служебные функции для сброса состояний анимаций (не доступны снаружи animaster)
 
+    // Сброс состояния, установленного fadeIn: убираем transitionDuration и возвращаем класс в состояние "скрыт"
     function resetFadeIn(element) {
         element.style.transitionDuration = null;
         element.classList.remove('show');
         element.classList.add('hide');
     }
 
+    // Сброс состояния, установленного fadeOut: убираем transitionDuration и возвращаем класс в состояние "видим"
     function resetFadeOut(element) {
         element.style.transitionDuration = null;
         element.classList.remove('hide');
         element.classList.add('show');
     }
 
+    // Сброс состояния, установленного move и scale: убираем transitionDuration и transform
     function resetMoveAndScale(element) {
         element.style.transitionDuration = null;
         element.style.transform = null;
@@ -129,10 +144,29 @@ function addListeners() {
             instance.scale(block, 1000, 1.25);
         });
 
+    let moveAndHideController = null;
     document.getElementById('moveAndHidePlay')
         .addEventListener('click', function () {
             const block = document.getElementById('moveAndHideBlock');
-            instance.moveAndHide(block, 5000);
+            if (moveAndHideController) {
+                moveAndHideController.stop();
+            }
+            moveAndHideController = instance.moveAndHide(block, 5000);
+        });
+
+    document.getElementById('moveAndHideReset')
+        .addEventListener('click', function () {
+            const block = document.getElementById('moveAndHideBlock');
+            if (moveAndHideController) {
+                moveAndHideController.reset();
+                moveAndHideController = null;
+            } else {
+                // Если анимация не запущена, сбросим состояние напрямую:
+                block.style.transitionDuration = null;
+                block.style.transform = null;
+                block.classList.remove('hide');
+                block.classList.add('show');
+            }
         });
 
     document.getElementById('showAndHidePlay')
@@ -141,7 +175,6 @@ function addListeners() {
             instance.showAndHide(block, 3000);
         });
 
-    // Обработка для сердцебиения: если уже запущено, останавливаем перед запуском новой анимации
     let heartBeatController = null;
     document.getElementById('heartBeatingPlay')
         .addEventListener('click', function () {
