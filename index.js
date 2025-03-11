@@ -1,5 +1,6 @@
 function animaster() {
-    // Вспомогательная функция для формирования строки трансформаций
+    const _steps = [];
+
     function getTransform(translation, ratio) {
         const result = [];
         if (translation) {
@@ -37,9 +38,7 @@ function animaster() {
 
     // Сложные анимации
 
-    // Анимация moveAndHide: элемент перемещается на 100px вправо и 20px вниз (за 2/5 времени)
-    // и затем исчезает (за оставшиеся 3/5 времени)
-    // Функция возвращает контроллер, позволяющий остановить (stop) или сбросить (reset) анимацию
+
     function moveAndHide(element, duration) {
         const moveDuration = (duration * 2) / 5;
         const fadeDuration = duration - moveDuration;
@@ -104,14 +103,58 @@ function animaster() {
         element.style.transform = null;
     }
 
+    function addMove(duration, translation) {
+        _steps.push(new animeStep('move', duration, translation));
+        return this;
+    }
+    
+    function addFadeIn(duration) {
+        _steps.push(new animeStep('fadeIn', duration));
+        return this;
+    }
+    
+    function addScale(duration, ratio) {
+        _steps.push(new animeStep('scale', duration, ratio));
+        return this;
+    }
+    
+    function addFadeOut(duration) {
+        _steps.push(new animeStep('fadeOut', duration));
+        return this;
+    }
+
+    function play(element) {
+        for (step of _steps) {
+            switch (step.operation)
+            {
+                case 'move':
+                    move(element, step.duration, step.params.pop());
+                    break;
+                case 'fadeIn':
+                    fadeIn(element, step.duration);
+                    break;
+                case 'scale':
+                    scale(element, step.duration, step.params[0]);
+                    break;
+                case 'fadeOut':
+                    fadeOut(element, step.duration);
+                    break;
+            }
+        }
+
+    }
+
     return {
+        _steps,
         fadeIn,
         fadeOut,
         move,
         scale,
         moveAndHide,
         showAndHide,
-        heartBeating
+        heartBeating,
+        addMove,
+        play
     };
 }
 
@@ -135,7 +178,9 @@ function addListeners() {
     document.getElementById('movePlay')
         .addEventListener('click', function () {
             const block = document.getElementById('moveBlock');
-            instance.move(block, 1000, { x: 100, y: 10 });
+            const anime = animaster()
+                .addMove(1000, { x: 100, y: 10 });
+            anime.play(block);
         });
 
     document.getElementById('scalePlay')
@@ -192,4 +237,14 @@ function addListeners() {
                 heartBeatController = null;
             }
         });
+}
+
+class animeStep {
+    constructor(operation, duration, ...params)
+    {
+        this.duration = duration;
+        this.operation = operation;
+        this.translation = translation;
+        this.params = params;
+    }
 }
