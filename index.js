@@ -12,27 +12,23 @@ function animaster() {
 
     // Простые анимации
 
-    // Анимация появления: элемент становится видимым
     function fadeIn(element, duration) {
         element.style.transitionDuration = `${duration}ms`;
         element.classList.remove('hide');
         element.classList.add('show');
     }
 
-    // Анимация скрытия: элемент становится невидимым
     function fadeOut(element, duration) {
         element.style.transitionDuration = `${duration}ms`;
         element.classList.remove('show');
         element.classList.add('hide');
     }
 
-    // Анимация перемещения
     function move(element, duration, translation) {
         element.style.transitionDuration = `${duration}ms`;
         element.style.transform = getTransform(translation, null);
     }
 
-    // Анимация масштабирования
     function scale(element, duration, ratio) {
         element.style.transitionDuration = `${duration}ms`;
         element.style.transform = getTransform(null, ratio);
@@ -40,6 +36,7 @@ function animaster() {
 
     // Сложные анимации
 
+    // Блок одновременно сдвигается и затем исчезает: 2/5 времени на перемещение и 3/5 — на исчезание
     function moveAndHide(element, duration) {
         const moveDuration = (duration * 2) / 5;
         const fadeDuration = duration - moveDuration; // 3/5 от общей длительности
@@ -49,6 +46,7 @@ function animaster() {
         }, moveDuration);
     }
 
+    // Блок появляется, ждёт и исчезает — каждый этап занимает 1/3 переданного времени
     function showAndHide(element, duration) {
         const stepDuration = duration / 3;
         fadeIn(element, stepDuration);
@@ -58,18 +56,42 @@ function animaster() {
     }
     
     function heartBeating(element) {
-        // Первый такт немедленно
         scale(element, 500, 1.4);
         setTimeout(() => {
             scale(element, 500, 1);
         }, 500);
-        // Повторяем каждые 1000 мс
-        return setInterval(() => {
+        const intervalId = setInterval(() => {
             scale(element, 500, 1.4);
             setTimeout(() => {
                 scale(element, 500, 1);
             }, 500);
         }, 1000);
+        return {
+            stop: () => clearInterval(intervalId)
+        };
+    }
+
+    // Служебные функции для сброса состояний анимаций
+    // Эти функции не доступны снаружи animaster
+
+    // Сброс состояния, установленного fadeIn: убираем transitionDuration и возвращаем класс в состояние "скрыт"
+    function resetFadeIn(element) {
+        element.style.transitionDuration = null;
+        element.classList.remove('show');
+        element.classList.add('hide');
+    }
+
+    // Сброс состояния, установленного fadeOut: убираем transitionDuration и возвращаем класс в состояние "видим"
+    function resetFadeOut(element) {
+        element.style.transitionDuration = null;
+        element.classList.remove('hide');
+        element.classList.add('show');
+    }
+
+    // Сброс состояния, установленного move и scale: убираем transitionDuration и transform
+    function resetMoveAndScale(element) {
+        element.style.transitionDuration = null;
+        element.style.transform = null;
     }
 
     return {
@@ -127,9 +149,18 @@ function addListeners() {
             instance.showAndHide(block, 3000);
         });
 
+    let heartBeatController = null;
     document.getElementById('heartBeatingPlay')
         .addEventListener('click', function () {
             const block = document.getElementById('heartBeatingBlock');
-            instance.heartBeating(block);
+            heartBeatController = instance.heartBeating(block);
+        });
+    
+    document.getElementById('heartBeatingStop')
+        .addEventListener('click', function () {
+            if (heartBeatController) {
+                heartBeatController.stop();
+                heartBeatController = null;
+            }
         });
 }
