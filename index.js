@@ -1,4 +1,5 @@
 function animaster() {
+    // Вспомогательная функция для формирования строки трансформаций
     function getTransform(translation, ratio) {
         const result = [];
         if (translation) {
@@ -36,17 +37,15 @@ function animaster() {
 
     // Сложные анимации
 
-    // Блок одновременно сдвигается и затем исчезает: 2/5 времени на перемещение и 3/5 — на исчезание
     function moveAndHide(element, duration) {
         const moveDuration = (duration * 2) / 5;
-        const fadeDuration = duration - moveDuration; // 3/5 от общей длительности
+        const fadeDuration = duration - moveDuration;
         move(element, moveDuration, { x: 100, y: 20 });
         setTimeout(() => {
             fadeOut(element, fadeDuration);
         }, moveDuration);
     }
 
-    // Блок появляется, ждёт и исчезает — каждый этап занимает 1/3 переданного времени
     function showAndHide(element, duration) {
         const stepDuration = duration / 3;
         fadeIn(element, stepDuration);
@@ -72,23 +71,19 @@ function animaster() {
     }
 
     // Служебные функции для сброса состояний анимаций
-    // Эти функции не доступны снаружи animaster
 
-    // Сброс состояния, установленного fadeIn: убираем transitionDuration и возвращаем класс в состояние "скрыт"
     function resetFadeIn(element) {
         element.style.transitionDuration = null;
         element.classList.remove('show');
         element.classList.add('hide');
     }
 
-    // Сброс состояния, установленного fadeOut: убираем transitionDuration и возвращаем класс в состояние "видим"
     function resetFadeOut(element) {
         element.style.transitionDuration = null;
         element.classList.remove('hide');
         element.classList.add('show');
     }
 
-    // Сброс состояния, установленного move и scale: убираем transitionDuration и transform
     function resetMoveAndScale(element) {
         element.style.transitionDuration = null;
         element.style.transform = null;
@@ -110,7 +105,6 @@ addListeners();
 function addListeners() {
     const instance = animaster();
 
-    // Простые анимации
     document.getElementById('fadeInPlay')
         .addEventListener('click', function () {
             const block = document.getElementById('fadeInBlock');
@@ -135,8 +129,6 @@ function addListeners() {
             instance.scale(block, 1000, 1.25);
         });
 
-    // Сложные анимации
-
     document.getElementById('moveAndHidePlay')
         .addEventListener('click', function () {
             const block = document.getElementById('moveAndHideBlock');
@@ -149,10 +141,14 @@ function addListeners() {
             instance.showAndHide(block, 3000);
         });
 
+    // Обработка для сердцебиения: если уже запущено, останавливаем перед запуском новой анимации
     let heartBeatController = null;
     document.getElementById('heartBeatingPlay')
         .addEventListener('click', function () {
             const block = document.getElementById('heartBeatingBlock');
+            if (heartBeatController) {
+                heartBeatController.stop();
+            }
             heartBeatController = instance.heartBeating(block);
         });
     
